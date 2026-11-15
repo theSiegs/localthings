@@ -490,9 +490,11 @@ class TestWrites:
         assert ("PUT", "/devices/1") not in _requests()
 
 
-def test_only_stop_is_declared_free_of_remote_control():
+def test_only_stop_and_the_delays_are_declared_free_of_remote_control():
     assert not STOP_BUTTON.needs_remote_control
-    others = [e for e in OPERATIONAL_STATE.entities if e is not STOP_BUTTON]
+    # Laundry boards hold a delay written with Remote Control off.
+    delays = {"delay_start_hours", "delay_finish_at"}
+    others = [e for e in OPERATIONAL_STATE.entities if e is not STOP_BUTTON and e.key not in delays]
     assert others
     assert all(e.needs_remote_control for e in others)
 

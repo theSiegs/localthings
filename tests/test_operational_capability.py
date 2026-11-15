@@ -526,3 +526,11 @@ class TestCycleMinutes:
         running = _WASHER_READY | {"x.com.samsung.da.state": "Run"}
         assert self._attrs(running, _WASHER_COURSE) == {"cycle_minutes": None}
         assert self._attrs({"x.com.samsung.da.state": "Ready"}, {}) == {"cycle_minutes": None}
+@pytest.mark.parametrize("key", ["delay_start_hours", "delay_finish_at"])
+def test_laundry_delay_writes_waive_remote_control(key):
+    """A WF50A8600 washer and DVE50A8800 dryer held a delay written with
+    Smart Control off; Start still needs it."""
+    desc = next(e for e in OPERATIONAL_STATE.entities if e.key == key)
+    assert desc.needs_remote_control is False
+    start = next(e for e in OPERATIONAL_STATE.entities if e.key == "start")
+    assert start.needs_remote_control is True
