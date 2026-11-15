@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Zbiornik wody"
       },
+      "damp_items_detected": {
+        "name": "Wykryto wilgotne pranie"
+      },
       "wrinkle_prevent_active": {
         "name": "Bez zagnieceń aktywne"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Dodatkowe płukanie nie jest dostępne dla wybranego cyklu."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "Alert wilgotnego wsadu nie jest dostępny w wybranym cyklu."
     },
     "paired_hood_fan_off": {
       "message": "Włącz wentylator okapu przed ustawieniem wyłącznika czasowego."

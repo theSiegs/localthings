@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Serbatoio"
       },
+      "damp_items_detected": {
+        "name": "Capi umidi rilevati"
+      },
       "wrinkle_prevent_active": {
         "name": "Antipiega attivo"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Risciacquo extra non è disponibile per il ciclo selezionato."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "L'avviso di umidità non è disponibile per il ciclo selezionato."
     },
     "paired_hood_fan_off": {
       "message": "Accendi la ventola della cappa prima di impostare il timer di spegnimento."

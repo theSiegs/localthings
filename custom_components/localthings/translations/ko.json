@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "물통"
       },
+      "damp_items_detected": {
+        "name": "젖은 세탁물 감지"
+      },
       "wrinkle_prevent_active": {
         "name": "구김 방지 작동 중"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "선택한 코스에서는 추가 헹굼을 사용할 수 없습니다."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "선택한 코스에서는 다림질 알림을 사용할 수 없습니다."
     },
     "paired_hood_fan_off": {
       "message": "자동 꺼짐 타이머를 설정하기 전에 레인지 후드 팬을 켜세요."

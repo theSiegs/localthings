@@ -7,6 +7,7 @@
     "cycle",
     "cycle_active",
     "damp_alert",
+    "damp_items_detected",
     "delay_finish_at",
     "delay_start_hours",
     "diagnosis",

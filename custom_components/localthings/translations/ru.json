@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Резервуар"
       },
+      "damp_items_detected": {
+        "name": "Обнаружено влажное бельё"
+      },
       "wrinkle_prevent_active": {
         "name": "Предотвращение складок статус"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Дополнительное полоскание недоступно в выбранной программе."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "Оповещение о влажности недоступно в выбранной программе."
     },
     "paired_hood_fan_off": {
       "message": "Включите вентилятор вытяжки, прежде чем задавать таймер её отключения."

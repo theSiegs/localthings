@@ -163,8 +163,16 @@ def hex_pairs(codes):
     return [codes[i : i + 2] for i in range(0, len(codes) - 1, 2)]
 
 
-def option_value(options, prefix):
-    """Find `<prefix>_<value>` in an options[] array and return <value>.
+# A TP2X_WM_COM_19K dryer reports the damp alert's setting and its status
+# under one prefix (MixedLoadBell_Disable beside MixedLoadBell_Nothing), where
+# other dryers give the status a MixedLoadBellNoti_ prefix of its own.
+MIXED_LOAD_BELL_SETTINGS = frozenset({"Enable", "Disable"})
+_SHARED_PREFIX_SETTINGS = {"MixedLoadBell": MIXED_LOAD_BELL_SETTINGS}
+
+
+def option_value(options, prefix, values=None):
+    """Find `<prefix>_<value>` in an options[] array and return <value>,
+    the first one among `values` when given.
 
     Lives here rather than in laundry.py, which is where it grew, because
     cloudcourse.py needs it too and laundry.py imports *that* -- so the
@@ -176,8 +184,18 @@ def option_value(options, prefix):
     """
     for o in options or []:
         if isinstance(o, str) and o.startswith(prefix + "_"):
-            return o.split("_", 1)[1]
+            value = o.split("_", 1)[1]
+            if values is None or value in values:
+                return value
     return None
+
+
+def _option_slot(token):
+    """What a token replaces when merged: its prefix, split in two where one
+    prefix carries both a setting and a status (_SHARED_PREFIX_SETTINGS)."""
+    prefix, value = token.rsplit("_", 1)
+    settings = _SHARED_PREFIX_SETTINGS.get(prefix)
+    return prefix if settings is None else (prefix, value in settings)
 
 
 def merge_options_field(cached, new_tokens):
@@ -199,10 +217,10 @@ def merge_options_field(cached, new_tokens):
     for token in new_tokens or ():
         if not isinstance(token, str) or "_" not in token:
             continue
-        prefix = token.rsplit("_", 1)[0]
+        slot = _option_slot(token)
         replaced = False
         for i, o in enumerate(merged):
-            if isinstance(o, str) and "_" in o and o.rsplit("_", 1)[0] == prefix:
+            if isinstance(o, str) and "_" in o and _option_slot(o) == slot:
                 merged[i] = token
                 replaced = True
         if not replaced:

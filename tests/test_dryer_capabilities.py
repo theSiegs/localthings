@@ -195,6 +195,86 @@ class TestDampAlert:
     def test_write_needs_a_populated_options_array(self):
         assert self._desc().write_fn("On", {}) is None
 
+    def test_reads_the_setting_whichever_token_comes_first(self):
+        rep = {"x.com.samsung.da.options": ["MixedLoadBell_Nothing", "MixedLoadBell_Enable"]}
+        assert self._desc().rep_fn(rep) is True
+
+
+def _shared_prefix_dryer(course="01", status="Nothing"):
+    """/course/vs/0 as a TP2X_WM_COM_19K dryer reports it: the damp alert's
+    setting and status share the MixedLoadBell_ prefix. Its course table is
+    the same-model DVE50A8600 fixture's."""
+    table = _load_device("dryer_dve50a8600")["/course/vs/0"]["x.com.samsung.da.supportedOptions"]
+    return {
+        "x.com.samsung.da.options": [
+            f"Course_{course}",
+            "MixedLoadBellSet_02FF02FFFF02FFFFFF0202FF02FFFF02FFFFFF",
+            "MixedLoadBell_Disable",
+            f"MixedLoadBell_{status}",
+            "SpecialFunction_20",
+            "AvailableDelayTime_39",
+            "DryTime_0",
+        ],
+        "x.com.samsung.da.supportedOptions": table,
+    }
+
+
+class TestDampAlertPerCourse:
+    """MixedLoadBellSet_ gates turning the alert on, per course."""
+
+    @staticmethod
+    def _desc():
+        return next(e for e in dryer.DRYER_COURSE.entities if e.key == "damp_alert")
+
+    def test_normal_offers_it(self):
+        desc = self._desc()
+        rep = _shared_prefix_dryer("01")
+        assert desc.extra_state_attributes_fn(rep, {}) == {"course_supported": True}
+        assert desc.validate_fn("On", rep, {}) is None
+
+    def test_time_dry_refuses_turning_it_on(self):
+        desc = self._desc()
+        rep = _shared_prefix_dryer("06")
+        assert desc.extra_state_attributes_fn(rep, {}) == {"course_supported": False}
+        assert desc.validate_fn("On", rep, {}) == "damp_alert_unavailable_for_cycle"
+        assert desc.validate_fn("Off", rep, {}) is None
+
+    def test_unresolvable_bitmap_allows_the_write(self):
+        desc = self._desc()
+        rep = _shared_prefix_dryer("06")
+        rep["x.com.samsung.da.options"][1] = "MixedLoadBellSet_02FF"
+        assert desc.extra_state_attributes_fn(rep, {}) == {"course_supported": None}
+        assert desc.validate_fn("On", rep, {}) is None
+
+
+class TestDampItemsDetected:
+    @staticmethod
+    def _desc():
+        return next(e for e in dryer.DRYER_COURSE.entities if e.key == "damp_items_detected")
+
+    def test_shared_prefix_status(self):
+        desc = self._desc()
+        rep = _shared_prefix_dryer()
+        assert desc.exists_fn(rep, {}) is True
+        assert desc.rep_fn(rep) is False
+        # Only Nothing has been seen; any other status reads as detected.
+        assert desc.rep_fn(_shared_prefix_dryer(status="Detected")) is True
+
+    def test_separate_noti_prefix(self):
+        desc = self._desc()
+        rep = {"x.com.samsung.da.options": ["MixedLoadBell_Enable", "MixedLoadBellNoti_Nothing"]}
+        assert desc.exists_fn(rep, {}) is True
+        assert desc.rep_fn(rep) is False
+
+    def test_absent_without_a_status(self):
+        rep = {"x.com.samsung.da.options": ["MixedLoadBell_Disable"]}
+        assert self._desc().exists_fn(rep, {}) is False
+
+    def test_the_switch_ignores_the_status(self):
+        switch = next(e for e in dryer.DRYER_COURSE.entities if e.key == "damp_alert")
+        assert switch.rep_fn is not None
+        assert switch.rep_fn(_shared_prefix_dryer(status="Detected")) is False
+
 
 class TestWrinklePreventActive:
     """Wrinkle-prevent running indicator over /course/vs/0's options[] array."""

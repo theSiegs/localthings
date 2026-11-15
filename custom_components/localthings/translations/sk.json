@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Nádržka"
       },
+      "damp_items_detected": {
+        "name": "Zistené vlhké prádlo"
+      },
       "wrinkle_prevent_active": {
         "name": "Ochrana proti pokrčeniu aktívna"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Extra plákanie nie je pri vybranom cykle dostupné."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "Upozornenie na vlhké prádlo nie je pri vybranom cykle dostupné."
     },
     "paired_hood_fan_off": {
       "message": "Pred nastavením časovača vypnutia zapnite ventilátor digestora."
