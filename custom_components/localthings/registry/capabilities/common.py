@@ -264,18 +264,17 @@ _WITHOUT_SC_FIELD = "x.com.samsung.da.isModelSettingWithoutSC"
 
 
 def model_allows_power_on_off(resources: dict) -> bool:
-    """True unless firmware explicitly declares remote power on/off
-    unsupported. isModelSettingPowerOnOff is "false" on many laundry
-    boards: /power/0 and /power/vs/0 still report state, but CoAP writes
-    are ignored. Absent setinfo (non-laundry families) keeps the writable
-    switch."""
+    """True unless firmware declares remote power on/off unsupported.
+    isModelSettingPowerOnOff is "false" on many laundry boards: /power/0 and
+    /power/vs/0 still report state, but CoAP writes are ignored. Absent
+    setinfo (non-laundry families), or one not fetched yet, keeps the
+    writable switch."""
     setinfo = resources.get(_SETINFO_HREF)
-    if setinfo is None:
+    if setinfo is None or is_stub_rep(setinfo):
         return True
-    flag = setinfo.get(_POWER_ON_OFF_FIELD)
-    if flag is None:
-        return True
-    return str(flag).lower() != "false"
+    # A setinfo without the flag means no: a TP2X_WM_COM_19K dryer reporting
+    # none answered a /power/0 write with 4.00.
+    return str(setinfo.get(_POWER_ON_OFF_FIELD)).lower() == "true"
 
 
 def model_setting_without_sc(resources: dict) -> bool:

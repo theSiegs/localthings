@@ -241,6 +241,27 @@ class TestPowerFallback:
         assert switch.exists_fn(resources["/power/0"], resources) is True
         assert sensor.exists_fn(resources["/power/0"], resources) is False
 
+    def test_power_read_only_when_setinfo_omits_the_flag(self):
+        """A TP2X_WM_COM_19K dryer's setinfo carries no power flag, and the
+        dryer refuses a /power/0 write with 4.00."""
+        switch = next(e for e in common.POWER_GENERIC.entities if isinstance(e, SwitchDesc))
+        sensor = next(e for e in common.POWER_GENERIC.entities if isinstance(e, BinarySensorDesc))
+        resources = {
+            "/power/0": {"value": False},
+            "/wm/setinfo/vs/0": {
+                "x.com.samsung.da.isModelSettingWithoutSC": "true",
+                "x.com.samsung.da.aiCourse": "false",
+            },
+        }
+        assert switch.exists_fn is not None
+        assert sensor.exists_fn is not None
+        assert switch.exists_fn(resources["/power/0"], resources) is False
+        assert sensor.exists_fn(resources["/power/0"], resources) is True
+
+    def test_setinfo_not_fetched_yet_decides_nothing(self):
+        resources = {"/power/0": {"value": True}, "/wm/setinfo/vs/0": {"href": "/wm/setinfo/vs/0"}}
+        assert common.model_allows_power_on_off(resources) is True
+
     def test_polled_warm_so_power_state_reflects_quickly(self):
         """issue #56 follow-up: neither href had a poll_tier, so power state
         only ever refreshed on the once-per-30s summary poll instead of the
