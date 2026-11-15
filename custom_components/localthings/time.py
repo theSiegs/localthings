@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import cast
+from typing import Any, cast
 
 from homeassistant.components.time import TimeEntity
 from homeassistant.config_entries import ConfigEntry
@@ -33,6 +33,18 @@ async def async_setup_entry(
 
 
 class LocalThingsTime(LocalThingsEntity, TimeEntity):
+    # Moves with the clock every minute while a washer or dryer sits idle; keeping it
+    # out of the recorder spares a new attributes row each time.
+    _unrecorded_attributes = frozenset({"earliest_finish"})
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        desc = cast(TimeDesc, self._bound.desc)
+        if desc.extra_state_attributes_fn is None:
+            return None
+        rep = self.coordinator.entity_rep(self._bound.href or "")
+        return desc.extra_state_attributes_fn(rep, self._resources)
+
     @property
     def native_value(self) -> datetime.time | None:
         value = (self.coordinator.data or {}).get(self._state_key)

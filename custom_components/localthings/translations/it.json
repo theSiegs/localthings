@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Impossibile inviare Wake-on-LAN al televisore: nessun percorso di rete verso {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "Il ritardo conta fino alla fine del ciclo, quindi non può essere più breve del ciclo selezionato. Imposta 0 per nessun ritardo."
+    },
+    "finish_before_cycle_ends": {
+      "message": "Il ciclo selezionato non può finire entro quell'ora. Scegli un orario di fine successivo."
     }
   },
   "selector": {

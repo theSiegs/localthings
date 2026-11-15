@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Couldn't send Wake-on-LAN to the TV: no network route to {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "The delay counts down to the end of the cycle, so it can't be shorter than the selected cycle. Set 0 for no delay."
+    },
+    "finish_before_cycle_ends": {
+      "message": "The selected cycle can't finish by then. Pick a later finish time."
     }
   },
   "selector": {

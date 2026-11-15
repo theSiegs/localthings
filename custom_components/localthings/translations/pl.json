@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Nie udało się wysłać Wake-on-LAN do telewizora: brak trasy sieciowej do {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "Opóźnienie odlicza czas do końca cyklu, więc nie może być krótsze niż wybrany cykl. Ustaw 0, aby nie opóźniać."
+    },
+    "finish_before_cycle_ends": {
+      "message": "Wybrany cykl nie może się zakończyć do tego czasu. Wybierz późniejszą godzinę zakończenia."
     }
   },
   "selector": {

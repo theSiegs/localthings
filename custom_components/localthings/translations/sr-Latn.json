@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Slanje Wake-on-LAN televizoru nije uspelo: nema mrežne rute do {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "Odlaganje se odbrojava do kraja ciklusa, pa ne može biti kraće od izabranog ciklusa. Postavite 0 za bez odlaganja."
+    },
+    "finish_before_cycle_ends": {
+      "message": "Izabrani ciklus ne može da se završi do tada. Izaberite kasnije vreme završetka."
     }
   },
   "selector": {

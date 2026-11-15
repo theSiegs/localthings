@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Wake-on-LAN konnte nicht gesendet werden: keine Netzwerkroute zu {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "Die Verzögerung zählt bis zum Ende des Programms herunter und darf daher nicht kürzer als das gewählte Programm sein. Für keine Verzögerung 0 einstellen."
+    },
+    "finish_before_cycle_ends": {
+      "message": "Das gewählte Programm kann bis dahin nicht fertig sein. Wählen Sie eine spätere Endzeit."
     }
   },
   "selector": {
