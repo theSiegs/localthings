@@ -12,11 +12,12 @@ the /course/vs/0 cycle select -- lives in laundry.py.
 
 from ..capability import Capability
 from ..entities import BinarySensorDesc, SelectDesc, SensorDesc, SwitchDesc
-from .common import diagnosis_status, option_value
+from .common import MIXED_LOAD_BELL_SETTINGS, diagnosis_status, hex_pairs, option_value
 from .laundry import (
     OPTION_KIND_DRY,
     OPTION_KIND_DRY_TIME,
     OPTION_KIND_WATER_TEMPERATURE,
+    _course_codes_from_supported_options,
     bool_option_exists,
     bool_option_light,
     course_narrowed_options,
@@ -169,8 +170,54 @@ DRYER_SETTINGS = Capability(
 # found on either dump #258 supplied, so if the app surfaces that reminder,
 # it isn't computed from anything this integration can read locally.
 # Damp Alert maps to MixedLoadBell; its Enable/Disable vocabulary requires a
-# dedicated writer. The per-course bitmap is not confirmed enough to safely
-# reject a write, so this control stays ungated.
+# dedicated writer.
+def _damp_alert(rep):
+    return option_value(
+        rep.get("x.com.samsung.da.options"), "MixedLoadBell", MIXED_LOAD_BELL_SETTINGS
+    )
+
+
+def _damp_status(rep):
+    """The damp alert's status: MixedLoadBellNoti_, or the MixedLoadBell_ value
+    that isn't a setting (see common.MIXED_LOAD_BELL_SETTINGS). Only Nothing
+    has been seen, so any other value is read as damp items detected."""
+    opts = rep.get("x.com.samsung.da.options")
+    status = option_value(opts, "MixedLoadBellNoti")
+    if status is not None:
+        return status
+    for o in opts or []:
+        if isinstance(o, str) and o.startswith("MixedLoadBell_"):
+            value = o.split("_", 1)[1]
+            if value not in MIXED_LOAD_BELL_SETTINGS:
+                return value
+    return None
+
+
+def _damp_alert_course_supported(rep):
+    """MixedLoadBellSet_ has one byte per course in supportedOptions order,
+    02 where the alert is offered: on a DVE50A8600 the 02s fall on Normal,
+    Heavy Duty, Towels and Bedding, the FFs on Time Dry, Air Fluff and Wool.
+    None when the selected course or bitmap can't be resolved."""
+    opts = rep.get("x.com.samsung.da.options")
+    current = option_value(opts, "Course")
+    raw = option_value(opts, "MixedLoadBellSet")
+    courses = _course_codes_from_supported_options(rep)
+    if not current or current not in courses or not raw:
+        return None
+    pairs = hex_pairs(raw)
+    if len(pairs) != len(courses):
+        return None
+    return pairs[courses.index(current)] == "02"
+
+
+def _damp_alert_validate(p, rep, resources):
+    # Same policy as washer._bool_option_switch: only a known-unavailable
+    # course blocks turning it on.
+    if p == "On" and _damp_alert_course_supported(rep) is False:
+        return "damp_alert_unavailable_for_cycle"
+    return None
+
+
 def _damp_alert_write(p, rep, href=None):
     if p == "On":
         value = "Enable"
@@ -205,11 +252,19 @@ DRYER_COURSE = Capability(
             key="damp_alert",
             icon="mdi:bell-ring-outline",
             entity_category="config",
-            exists_fn=bool_option_exists("MixedLoadBell"),
-            rep_fn=lambda rep: (
-                option_value(rep.get("x.com.samsung.da.options"), "MixedLoadBell") == "Enable"
-            ),
+            exists_fn=lambda rep, resources: _damp_alert(rep) is not None,
+            rep_fn=lambda rep: _damp_alert(rep) == "Enable",
+            validate_fn=_damp_alert_validate,
+            extra_state_attributes_fn=lambda rep, resources: {
+                "course_supported": _damp_alert_course_supported(rep)
+            },
             write_fn=_damp_alert_write,
+        ),
+        BinarySensorDesc(
+            key="damp_items_detected",
+            device_class="moisture",
+            exists_fn=lambda rep, resources: _damp_status(rep) is not None,
+            rep_fn=lambda rep: _damp_status(rep) not in (None, "Nothing"),
         ),
         # Reports the active post-cycle tumble, distinct from the
         # wrinkle_prevent switch on /washer/vs/0 that arms it.

@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Waterreservoir"
       },
+      "damp_items_detected": {
+        "name": "Vochtige was gedetecteerd"
+      },
       "wrinkle_prevent_active": {
         "name": "Kreukpreventie actief"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Extra Rinse is niet beschikbaar voor het geselecteerde programma."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "De waarschuwing vochtige was is niet beschikbaar voor het geselecteerde programma."
     },
     "paired_hood_fan_off": {
       "message": "Zet de ventilator van de afzuigkap aan voordat u de uitschakeltimer instelt."

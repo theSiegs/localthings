@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Reservatório"
       },
+      "damp_items_detected": {
+        "name": "Peças úmidas detectadas"
+      },
       "wrinkle_prevent_active": {
         "name": "Antiamassado ativo"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "O enxágue extra não está disponível no ciclo selecionado."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "O alerta de umidade não está disponível no ciclo selecionado."
     },
     "paired_hood_fan_off": {
       "message": "Ligue o ventilador da coifa antes de definir o temporizador de desligamento."

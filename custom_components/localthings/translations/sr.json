@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Резервоар"
       },
+      "damp_items_detected": {
+        "name": "Откривен влажан веш"
+      },
       "wrinkle_prevent_active": {
         "name": "Спречавање гужвања активно"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Додатно испирање није доступно на изабраном циклусу."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "Упозорење на влагу није доступно на изабраном циклусу."
     },
     "paired_hood_fan_off": {
       "message": "Укључите вентилатор аспиратора пре него што подесите тајмер за његово искључивање."

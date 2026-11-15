@@ -401,6 +401,9 @@
     "extra_rinse_unavailable_for_cycle": {
       "message": "El aclarado extra no está disponible en el ciclo seleccionado."
     },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "La alerta de humedad no está disponible en el ciclo seleccionado."
+    },
     "paired_hood_fan_off": {
       "message": "Encienda el ventilador de la campana extractora antes de programar su temporizador de apagado."
     },
@@ -628,6 +631,9 @@
       },
       "reservoir_open": {
         "name": "Depósito de agua"
+      },
+      "damp_items_detected": {
+        "name": "Prendas húmedas detectadas"
       },
       "wrinkle_prevent_active": {
         "name": "Anti-arrugas activo"

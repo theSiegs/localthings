@@ -163,6 +163,9 @@
       "reservoir_open": {
         "name": "Réservoir"
       },
+      "damp_items_detected": {
+        "name": "Linge humide détecté"
+      },
       "wrinkle_prevent_active": {
         "name": "Anti-froissage actif"
       },
@@ -3092,6 +3095,9 @@
     },
     "extra_rinse_unavailable_for_cycle": {
       "message": "Le rinçage supplémentaire n'est pas disponible avec le programme sélectionné."
+    },
+    "damp_alert_unavailable_for_cycle": {
+      "message": "L'alerte linge humide n'est pas disponible avec le programme sélectionné."
     },
     "paired_hood_fan_off": {
       "message": "Allumez le ventilateur de la hotte avant de régler sa minuterie d'arrêt."

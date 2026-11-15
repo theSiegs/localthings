@@ -97,6 +97,21 @@ class TestMergeOptionsField:
             "Course_1B",
         ]
 
+    def test_keeps_a_shared_prefix_setting_and_status_apart(self):
+        """A TP2X_WM_COM_19K dryer reports MixedLoadBell_Disable beside
+        MixedLoadBell_Nothing; a status notify overwrote the setting too."""
+        cached = ["MixedLoadBell_Enable", "MixedLoadBell_Nothing", "Course_01"]
+        assert common.merge_options_field(cached, ["MixedLoadBell_Detected"]) == [
+            "MixedLoadBell_Enable",
+            "MixedLoadBell_Detected",
+            "Course_01",
+        ]
+        assert common.merge_options_field(cached, ["MixedLoadBell_Disable"]) == [
+            "MixedLoadBell_Disable",
+            "MixedLoadBell_Nothing",
+            "Course_01",
+        ]
+
     def test_handles_missing_cache(self):
         assert common.merge_options_field(None, ["Course_1D"]) == ["Course_1D"]
 
