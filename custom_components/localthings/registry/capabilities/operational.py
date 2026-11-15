@@ -7,8 +7,8 @@ import math
 from datetime import UTC, datetime, timedelta
 
 from ...catalog import translated_states
+from ...finish import DELAY_FIELD, running_finish
 from ...finish import remaining_seconds as _remaining_seconds
-from ...finish import running_finish
 from ..capability import Capability
 from ..entities import BinarySensorDesc, ButtonDesc, NumberDesc, SensorDesc, TimeDesc
 
@@ -138,8 +138,12 @@ def _delay_finish_at(rep):
     total_s = _remaining_seconds(rep.get(_DELAY_END))
     if not total_s:
         return None
-    # Whole minutes, so the clock's seconds don't make a new state each poll.
-    return (datetime.now(UTC) + timedelta(seconds=total_s)).replace(second=0, microsecond=0)
+    # Anchored where the reading arrived (finish.py); now() is the fallback.
+    finish = rep.get(DELAY_FIELD)
+    if not isinstance(finish, datetime):
+        finish = datetime.now(UTC) + timedelta(seconds=total_s)
+    # Nearest whole minute, as finish_at rounds.
+    return (finish + timedelta(seconds=30)).replace(second=0, microsecond=0)
 
 
 def _delay_until(target, now):

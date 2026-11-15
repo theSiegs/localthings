@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from custom_components.localthings.finish import DELAY_FIELD
 from custom_components.localthings.registry.capabilities.operational import (
     OPERATIONAL_STATE,
     _just_finished,
@@ -397,7 +398,13 @@ class TestDelayFinishAt:
         value = desc.rep_fn({"x.com.samsung.da.delayEndTime": "04:00:00"})
         assert value is not None
         assert value.second == 0 and value.microsecond == 0
-        assert timedelta(hours=4) - timedelta(minutes=1) <= value - before <= timedelta(hours=4)
+        assert abs(value - before - timedelta(hours=4)) <= timedelta(minutes=1)
+
+    def test_reads_the_anchored_finish_when_one_is_merged(self):
+        """The coordinator merges finish.DELAY_FIELD; rounded to the nearest minute."""
+        anchored = datetime(2026, 11, 15, 11, 8, 40, tzinfo=UTC)
+        rep = {"x.com.samsung.da.delayEndTime": "06:59:00", DELAY_FIELD: anchored}
+        assert self._desc().rep_fn(rep) == datetime(2026, 11, 15, 11, 9, tzinfo=UTC)
 
     @pytest.mark.parametrize("raw", ["00:00:00", "", None])
     def test_no_value_without_a_pending_delay(self, raw):

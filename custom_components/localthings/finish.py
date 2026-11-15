@@ -22,10 +22,13 @@ from datetime import UTC, datetime, timedelta
 
 REMAINING = "x.com.samsung.da.remainingTime"
 STATE = "x.com.samsung.da.state"
+DELAY_END = "x.com.samsung.da.delayEndTime"
 
 # Synthetic, read-time only, like cloudcourse.FIELD: never cached, written to
 # the device, or part of a diagnostics dump.
 FIELD = "x.localthings.finish"
+# The same for a pending laundry delay: when delayEndTime points.
+DELAY_FIELD = "x.localthings.delay_finish"
 
 # Samsung's spellings and the OCF ones a board may report instead.
 _PAUSED = frozenset({"pause", "paused"})
@@ -35,6 +38,10 @@ _IDLE = frozenset({"ready", "end", "stop", "idle"})
 _SWEEP_LAG = timedelta(seconds=5)
 # A reading unchanged for longer than one step plus this has stalled.
 _STALL_SLACK = timedelta(seconds=10)
+# A delay tick re-anchored within this of the held finish is arrival jitter,
+# not a change: a WF8000A washer's delay finish flipped a minute back and forth
+# every tick when recomputed from now() on each read.
+_DELAY_JITTER = timedelta(seconds=30)
 
 
 def remaining_seconds(raw) -> int | None:
@@ -78,9 +85,38 @@ class FinishAnchors:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._anchors: dict[str, _Anchor] = {}
+        self._delays: dict[str, _Anchor] = {}
 
     def observe(self, href: str, rep: dict, source: str, now: datetime) -> bool:
-        """Learn from one applied rep; True if the finish changed."""
+        """Learn from one applied rep; True if either finish changed."""
+        delay_changed = self._observe_delay(href, rep, now)
+        return self._observe_remaining(href, rep, source, now) or delay_changed
+
+    def _observe_delay(self, href: str, rep: dict, now: datetime) -> bool:
+        """Anchor delayEndTime when its value changes. Before Start it holds
+        still, so once stalled the finish walks with the clock, which is
+        what the appliance will do when started."""
+        if DELAY_END not in rep:
+            return False
+        raw = rep.get(DELAY_END)
+        total_s = remaining_seconds(raw)
+        with self._lock:
+            a = self._delays.setdefault(href, _Anchor())
+            before = a.finish
+            if not total_s:
+                a.finish = None
+            else:
+                finish = now + timedelta(seconds=total_s)
+                if raw != a.raw:
+                    if a.finish is None or abs(finish - a.finish) > _DELAY_JITTER:
+                        a.finish = finish
+                    a.raw_at = now
+                elif a.raw_at is None or now - a.raw_at > _step(False) + _STALL_SLACK:
+                    a.finish = finish
+            a.raw = raw
+            return a.finish != before
+
+    def _observe_remaining(self, href: str, rep: dict, source: str, now: datetime) -> bool:
         if REMAINING not in rep:
             return False
         raw = rep.get(REMAINING)
@@ -132,6 +168,16 @@ class FinishAnchors:
                 for href, a in self._anchors.items()
                 if a.finish is not None
             }
+
+    def delay_fields(self) -> dict[str, datetime]:
+        """{href: DELAY_FIELD value} for every href with a pending delay."""
+        with self._lock:
+            return {href: a.finish for href, a in self._delays.items() if a.finish is not None}
+
+    def delay_field(self, href: str) -> datetime | None:
+        with self._lock:
+            a = self._delays.get(href)
+            return a.finish if a else None
 
     def field(self, href: str) -> dict | None:
         with self._lock:
