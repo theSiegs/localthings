@@ -11,8 +11,10 @@ from ...finish import DELAY_FIELD, running_finish
 from ...finish import remaining_seconds as _remaining_seconds
 from ..capability import Capability
 from ..entities import BinarySensorDesc, ButtonDesc, NumberDesc, SensorDesc, TimeDesc
+from .common import option_value
 
 _DELAY_END = "x.com.samsung.da.delayEndTime"
+_COURSE_HREF = "/course/vs/0"
 
 _SAMSUNG_STATE_TO_OCF = {
     "Ready": "idle",
@@ -167,6 +169,51 @@ def _delay_until(target, now):
     return (finish - now).total_seconds() / 3600
 
 
+def _cycle_minutes(rep, resources):
+    """The selected course's length in minutes, or None when unknown.
+
+    AvailableDelayTime equals an idle remainingTime on every Ready washer and
+    dryer fixture but one: a DVE50A8600 dryer reads 39 against a 01:15:00 cycle,
+    so an idle machine takes the larger of the two. Once running,
+    remainingTime is the time left or the delay itself (#427), not the cycle.
+    """
+    course = (resources or {}).get(_COURSE_HREF) or {}
+    candidates = [_int(option_value(course.get("x.com.samsung.da.options"), "AvailableDelayTime"))]
+    if _to_ocf(rep.get("x.com.samsung.da.state")) == "idle":
+        total_s = _remaining_seconds(rep.get("x.com.samsung.da.remainingTime"))
+        candidates.append(math.ceil(total_s / 60) if total_s else None)
+    known = [m for m in candidates if m]
+    return max(known) if known else None
+
+
+def _too_short(hours, rep, resources):
+    """Whether a delay to the cycle's end is shorter than the cycle itself.
+    0 cancels the delay and is never too short."""
+    minutes = round(max(float(hours), 0) * 60)
+    cycle = _cycle_minutes(rep, resources)
+    return bool(minutes and cycle and minutes < cycle)
+
+
+def _validate_delay_hours(hours, rep, resources):
+    # delayStartTime (dishwashers) counts to the start, so any length works.
+    if _delay_field(rep) == _DELAY_END and _too_short(hours, rep, resources):
+        return "delay_shorter_than_cycle"
+    return None
+
+
+def _validate_finish_at(hours, rep, resources):
+    return "finish_before_cycle_ends" if _too_short(hours, rep, resources) else None
+
+
+def _cycle_attributes(rep, resources):
+    """The selected cycle's length while idle, so now + cycle_minutes is the
+    soonest finish the picker accepts. Running, AvailableDelayTime counts down
+    with the cycle, and an attribute that ticks each minute floods the recorder."""
+    if _to_ocf(rep.get("x.com.samsung.da.state")) != "idle":
+        return {"cycle_minutes": None}
+    return {"cycle_minutes": _cycle_minutes(rep, resources)}
+
+
 def _finish_time(rep):
     """Timed from when the reading arrived (see finish.py, #772)."""
     return running_finish(rep, _is_active(rep))
@@ -285,6 +332,7 @@ OPERATIONAL_STATE = Capability(
             # Same field the write targets: reading one key while writing
             # another would show a stale value after every set.
             rep_fn=lambda rep: _delay_hours(rep.get(_delay_field(rep))),
+            validate_fn=_validate_delay_hours,
             write_fn=lambda p, rep, href=None: (
                 ["operational", "state", "vs", "0"],
                 {_delay_field(rep): _format_delay(p)},
@@ -298,6 +346,8 @@ OPERATIONAL_STATE = Capability(
             exists_fn=lambda rep, resources: _DELAY_END in rep,
             rep_fn=_delay_finish_at,
             payload_fn=_delay_until,
+            validate_fn=_validate_finish_at,
+            extra_state_attributes_fn=_cycle_attributes,
             write_fn=lambda p, rep, href=None: (
                 ["operational", "state", "vs", "0"],
                 {_DELAY_END: _format_delay(p)},

@@ -463,6 +463,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "No se pudo enviar Wake-on-LAN al televisor: no hay ruta de red a {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "El retraso cuenta hasta el final del ciclo, así que no puede ser más corto que el ciclo seleccionado. Ponga 0 para no retrasar."
+    },
+    "finish_before_cycle_ends": {
+      "message": "El ciclo seleccionado no puede terminar para entonces. Elija una hora de finalización posterior."
     }
   },
   "entity": {

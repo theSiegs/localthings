@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Kan Wake-on-LAN niet naar de tv sturen: geen netwerkroute naar {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "Het uitstel telt af tot het einde van het programma, dus het kan niet korter zijn dan het gekozen programma. Stel 0 in voor geen uitstel."
+    },
+    "finish_before_cycle_ends": {
+      "message": "Het gekozen programma kan dan nog niet klaar zijn. Kies een latere eindtijd."
     }
   },
   "selector": {

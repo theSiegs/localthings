@@ -3155,6 +3155,12 @@
     },
     "wake_on_lan_no_route": {
       "message": "Wake-on-LAN se nepodařilo odeslat: žádná síťová cesta k {targets}."
+    },
+    "delay_shorter_than_cycle": {
+      "message": "Odklad se odpočítává do konce cyklu, proto nemůže být kratší než zvolený cyklus. Pro žádný odklad nastavte 0."
+    },
+    "finish_before_cycle_ends": {
+      "message": "Zvolený cyklus do té doby nemůže skončit. Vyberte pozdější čas dokončení."
     }
   },
   "selector": {

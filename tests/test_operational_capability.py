@@ -428,3 +428,101 @@ def test_device_reporting_no_delay_key_at_all_writes_the_end_key():
     assert result is not None
     _path, body = result
     assert body == {"x.com.samsung.da.delayEndTime": "01:30:00"}
+
+
+# Shaped like a WF8000A washer at Ready: the course's AvailableDelayTime and
+# the idle remainingTime agree on a 119-minute cycle.
+_WASHER_COURSE = {"x.com.samsung.da.options": ["Course_1B", "AvailableDelayTime_119"]}
+_WASHER_READY = {
+    "x.com.samsung.da.state": "Ready",
+    "x.com.samsung.da.remainingTime": "01:59:00",
+    "x.com.samsung.da.delayEndTime": "00:00:00",
+}
+# Shaped like the DVE50A8600 dryer fixture: AvailableDelayTime undercounts
+# the 01:15:00 cycle the dryer shows while idle.
+_DRYER_COURSE = {"x.com.samsung.da.options": ["Course_01", "AvailableDelayTime_39"]}
+_DRYER_READY = {
+    "x.com.samsung.da.state": "Ready",
+    "x.com.samsung.da.remainingTime": "01:15:00",
+    "x.com.samsung.da.delayEndTime": "00:00:00",
+}
+
+
+def _entity(key, cls):
+    return next(e for e in OPERATIONAL_STATE.entities if e.key == key and isinstance(e, cls))
+
+
+class TestDelayShorterThanCycle:
+    """delayEndTime counts down to the cycle's end (#427), so a delay shorter
+    than the cycle asks for a finish the appliance can't reach."""
+
+    @pytest.mark.parametrize(
+        "rep,course,hours,error",
+        [
+            (_WASHER_READY, _WASHER_COURSE, 1, "delay_shorter_than_cycle"),
+            (_WASHER_READY, _WASHER_COURSE, 2, None),
+            # 0 cancels the delay.
+            (_WASHER_READY, _WASHER_COURSE, 0, None),
+            # The dryer's AvailableDelayTime alone would let 1 h through.
+            (_DRYER_READY, _DRYER_COURSE, 1, "delay_shorter_than_cycle"),
+            (_DRYER_READY, _DRYER_COURSE, 2, None),
+            # A dishwasher's delayStartTime counts to the start instead.
+            ({"x.com.samsung.da.delayStartTime": "00:00:00"}, _WASHER_COURSE, 1, None),
+            # No course length known: leave it to the appliance.
+            (_WASHER_READY | {"x.com.samsung.da.remainingTime": "00:00:00"}, {}, 1, None),
+        ],
+    )
+    def test_delay_hours(self, rep, course, hours, error):
+        desc = _entity("delay_start_hours", NumberDesc)
+        assert desc.validate_fn is not None
+        assert desc.validate_fn(hours, rep, {"/course/vs/0": course}) == error
+
+    @pytest.mark.parametrize(
+        "target,error",
+        [
+            (time(10, 30), "finish_before_cycle_ends"),
+            # 09:30 + 119 min is 11:29, the earliest the picker accepts.
+            (time(11, 28), "finish_before_cycle_ends"),
+            (time(11, 29), None),
+            # Before now means tomorrow, which is long enough.
+            (time(9, 0), None),
+        ],
+    )
+    def test_finish_at(self, target, error):
+        desc = _entity("delay_finish_at", TimeDesc)
+        assert desc.payload_fn is not None and desc.validate_fn is not None
+        hours = desc.payload_fn(target, datetime(2026, 9, 13, 9, 30, 20))
+        assert desc.validate_fn(hours, _WASHER_READY, {"/course/vs/0": _WASHER_COURSE}) == error
+
+    def test_running_cycle_ignores_remaining_time(self):
+        """During Delaywash remainingTime holds the delay (a WF80H fixture
+        reads 09:26:00), so only AvailableDelayTime describes the cycle."""
+        desc = _entity("delay_start_hours", NumberDesc)
+        assert desc.validate_fn is not None
+        rep = {
+            "x.com.samsung.da.state": "Run",
+            "x.com.samsung.da.progress": "Delaywash",
+            "x.com.samsung.da.remainingTime": "09:26:00",
+            "x.com.samsung.da.delayEndTime": "09:26:00",
+        }
+        course = {"/course/vs/0": {"x.com.samsung.da.options": ["AvailableDelayTime_100"]}}
+        assert desc.validate_fn(2, rep, course) is None
+        assert desc.validate_fn(1, rep, course) == "delay_shorter_than_cycle"
+
+
+class TestCycleMinutes:
+    def _attrs(self, rep, course):
+        desc = _entity("delay_finish_at", TimeDesc)
+        assert desc.extra_state_attributes_fn is not None
+        return desc.extra_state_attributes_fn(rep, {"/course/vs/0": course})
+
+    def test_the_cycle_length_while_idle(self):
+        assert self._attrs(_WASHER_READY, _WASHER_COURSE) == {"cycle_minutes": 119}
+
+    def test_dryer_takes_the_longer_idle_reading(self):
+        assert self._attrs(_DRYER_READY, _DRYER_COURSE) == {"cycle_minutes": 75}
+
+    def test_none_while_running_or_unknown(self):
+        running = _WASHER_READY | {"x.com.samsung.da.state": "Run"}
+        assert self._attrs(running, _WASHER_COURSE) == {"cycle_minutes": None}
+        assert self._attrs({"x.com.samsung.da.state": "Ready"}, {}) == {"cycle_minutes": None}

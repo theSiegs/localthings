@@ -224,6 +224,7 @@ class NumberDesc(SamsungEntityDescription):
     bounds_fn: Callable[[dict, dict], tuple[float, float, float] | None] | None = None
     range_field: str | None = None  # resource field containing [min, max] list
     write_fn: WriteFn = None
+    validate_fn: ValidateFn = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -232,6 +233,8 @@ class TimeDesc(SamsungEntityDescription):
     native_value_fn: Callable[[Any, datetime], dt_time | None] | None = None
     write_fn: WriteFn = None
     payload_fn: TimePayloadFn = None
+    # Sees payload_fn's result, not the picked time.
+    validate_fn: ValidateFn = None
 
 
 @dataclass(frozen=True, kw_only=True)

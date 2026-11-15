@@ -19,6 +19,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.localthings.const import (
@@ -31,9 +32,10 @@ from custom_components.localthings.const import (
 from custom_components.localthings.coordinator import LocalThingsCoordinator
 from custom_components.localthings.registry.capabilities import laundry, robot_vacuum
 from custom_components.localthings.registry.capabilities.airconditioner import _climate_write
+from custom_components.localthings.registry.capabilities.operational import OPERATIONAL_STATE
 from custom_components.localthings.registry.capability import Capability
 from custom_components.localthings.registry.discovery import BoundEntity
-from custom_components.localthings.registry.entities import ClimateDesc
+from custom_components.localthings.registry.entities import ClimateDesc, NumberDesc
 from custom_components.localthings.registry.subdevices import Subdevice
 from custom_components.localthings.transport import Transport
 
@@ -280,3 +282,39 @@ async def test_indexed_subdevice_climate_write_quantizes_with_its_own_temperatur
     posted_path, posted_body = coordinator._session.post_calls[0]
     assert posted_path == ["temperature", "desired", "1"]
     assert posted_body == {"temperature": 24.5}
+
+
+async def test_delay_shorter_than_the_cycle_is_refused_before_the_write(coordinator) -> None:
+    """A delay to the cycle's end that is shorter than the cycle (here the
+    course's 119 minutes) is refused with a translated message, unsent."""
+    coordinator._observe.apply(
+        "/course/vs/0",
+        {"x.com.samsung.da.options": ["Course_1B", "AvailableDelayTime_119"]},
+        source="poll",
+    )
+    href = "/operational/state/vs/0"
+    coordinator._observe.apply(
+        href,
+        {
+            "x.com.samsung.da.state": "Ready",
+            "x.com.samsung.da.remainingTime": "01:59:00",
+            "x.com.samsung.da.delayEndTime": "00:00:00",
+        },
+        source="poll",
+    )
+    desc = next(
+        e
+        for e in OPERATIONAL_STATE.entities
+        if e.key == "delay_start_hours" and isinstance(e, NumberDesc)
+    )
+    bound = BoundEntity(href=href, capability=OPERATIONAL_STATE, desc=desc)
+
+    with pytest.raises(ServiceValidationError) as err:
+        await coordinator.async_send_command(bound, 1.0)
+    assert err.value.translation_key == "delay_shorter_than_cycle"
+    assert coordinator._session.post_calls == []
+
+    await coordinator.async_send_command(bound, 2.0)
+    assert coordinator._session.post_calls == [
+        (["operational", "state", "vs", "0"], {"x.com.samsung.da.delayEndTime": "02:00:00"})
+    ]
