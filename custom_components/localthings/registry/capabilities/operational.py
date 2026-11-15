@@ -201,13 +201,13 @@ def _validate_finish_at(hours, rep, resources):
     return "finish_before_cycle_ends" if _too_short(hours, rep, resources) else None
 
 
-def _earliest_finish(rep, resources):
-    """now + the cycle while idle: the soonest finish the picker accepts."""
-    cycle = _cycle_minutes(rep, resources)
-    if not cycle or _to_ocf(rep.get("x.com.samsung.da.state")) != "idle":
-        return {"earliest_finish": None}
-    finish = datetime.now(UTC) + timedelta(minutes=cycle)
-    return {"earliest_finish": finish.replace(second=0, microsecond=0)}
+def _cycle_attributes(rep, resources):
+    """The selected cycle's length while idle, so now + cycle_minutes is the
+    soonest finish the picker accepts. Running, AvailableDelayTime counts down
+    with the cycle, and an attribute that ticks each minute floods the recorder."""
+    if _to_ocf(rep.get("x.com.samsung.da.state")) != "idle":
+        return {"cycle_minutes": None}
+    return {"cycle_minutes": _cycle_minutes(rep, resources)}
 
 
 def _finish_time(rep):
@@ -343,7 +343,7 @@ OPERATIONAL_STATE = Capability(
             rep_fn=_delay_finish_at,
             payload_fn=_delay_until,
             validate_fn=_validate_finish_at,
-            extra_state_attributes_fn=_earliest_finish,
+            extra_state_attributes_fn=_cycle_attributes,
             write_fn=lambda p, rep, href=None: (
                 ["operational", "state", "vs", "0"],
                 {_DELAY_END: _format_delay(p)},

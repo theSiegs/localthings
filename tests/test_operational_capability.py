@@ -503,24 +503,19 @@ class TestDelayShorterThanCycle:
         assert desc.validate_fn(1, rep, course) == "delay_shorter_than_cycle"
 
 
-class TestEarliestFinish:
+class TestCycleMinutes:
     def _attrs(self, rep, course):
         desc = _entity("delay_finish_at", TimeDesc)
         assert desc.extra_state_attributes_fn is not None
         return desc.extra_state_attributes_fn(rep, {"/course/vs/0": course})
 
-    def test_now_plus_the_cycle_while_idle(self):
-        before = datetime.now(UTC).replace(second=0, microsecond=0)
-        finish = self._attrs(_WASHER_READY, _WASHER_COURSE)["earliest_finish"]
-        assert finish.second == 0 and finish.microsecond == 0
-        assert timedelta(minutes=119) <= finish - before <= timedelta(minutes=120)
+    def test_the_cycle_length_while_idle(self):
+        assert self._attrs(_WASHER_READY, _WASHER_COURSE) == {"cycle_minutes": 119}
 
     def test_dryer_takes_the_longer_idle_reading(self):
-        before = datetime.now(UTC).replace(second=0, microsecond=0)
-        finish = self._attrs(_DRYER_READY, _DRYER_COURSE)["earliest_finish"]
-        assert timedelta(minutes=75) <= finish - before <= timedelta(minutes=76)
+        assert self._attrs(_DRYER_READY, _DRYER_COURSE) == {"cycle_minutes": 75}
 
     def test_none_while_running_or_unknown(self):
         running = _WASHER_READY | {"x.com.samsung.da.state": "Run"}
-        assert self._attrs(running, _WASHER_COURSE) == {"earliest_finish": None}
-        assert self._attrs({"x.com.samsung.da.state": "Ready"}, {}) == {"earliest_finish": None}
+        assert self._attrs(running, _WASHER_COURSE) == {"cycle_minutes": None}
+        assert self._attrs({"x.com.samsung.da.state": "Ready"}, {}) == {"cycle_minutes": None}

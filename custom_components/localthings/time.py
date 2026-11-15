@@ -33,10 +33,6 @@ async def async_setup_entry(
 
 
 class LocalThingsTime(LocalThingsEntity, TimeEntity):
-    # Moves with the clock every minute while a washer or dryer sits idle; keeping it
-    # out of the recorder spares a new attributes row each time.
-    _unrecorded_attributes = frozenset({"earliest_finish"})
-
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         desc = cast(TimeDesc, self._bound.desc)
