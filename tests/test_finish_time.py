@@ -428,3 +428,50 @@ async def test_the_coordinator_merges_the_finish_and_pushes_it(hass):
     assert finish.FIELD in coordinator.entity_rep(HREF)
     # Never in what the device reported.
     assert finish.FIELD not in coordinator.resource(HREF)
+
+
+# --- a pending laundry delay (delayEndTime) -----------------------------------
+
+
+def _delay(raw):
+    return {"x.com.samsung.da.state": "Run", "x.com.samsung.da.delayEndTime": raw}
+
+
+def test_a_counting_delay_holds_its_finish_between_ticks():
+    """A WF8000A washer's delay counts down once a minute out of step with
+    the polls; recomputing now() + delay on every read flipped the finish a
+    minute back and forth each tick."""
+    anchors = finish.FinishAnchors()
+    assert anchors.observe(HREF, _delay("07:00:00"), "observe", _at(0))
+    held = anchors.delay_field(HREF)
+    assert held == _at(7 * 3600)
+    # Same reading 40 s later: no new state.
+    assert not anchors.observe(HREF, _delay("07:00:00"), "poll", _at(40))
+    # The tick lands a few seconds late: jitter, not a change.
+    assert not anchors.observe(HREF, _delay("06:59:00"), "observe", _at(64))
+    assert not anchors.observe(HREF, _delay("06:58:00"), "sweep", _at(122))
+    assert anchors.delay_field(HREF) == held
+
+
+def test_a_changed_delay_moves_the_finish():
+    anchors = finish.FinishAnchors()
+    anchors.observe(HREF, _delay("07:00:00"), "observe", _at(0))
+    assert anchors.observe(HREF, _delay("08:00:00"), "observe", _at(5))
+    assert anchors.delay_field(HREF) == _at(5 + 8 * 3600)
+
+
+def test_a_delay_not_yet_started_walks_with_the_clock():
+    """Before Start the appliance holds the duration still and counts it from
+    whenever Start is pressed."""
+    anchors = finish.FinishAnchors()
+    anchors.observe(HREF, _delay("03:00:00"), "observe", _at(0))
+    assert anchors.observe(HREF, _delay("03:00:00"), "poll", _at(120))
+    assert anchors.delay_field(HREF) == _at(120 + 3 * 3600)
+
+
+def test_a_cleared_delay_drops_its_finish():
+    anchors = finish.FinishAnchors()
+    anchors.observe(HREF, _delay("01:00:00"), "observe", _at(0))
+    assert anchors.observe(HREF, _delay("00:00:00"), "observe", _at(30))
+    assert anchors.delay_field(HREF) is None
+    assert anchors.delay_fields() == {}

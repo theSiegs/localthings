@@ -781,6 +781,9 @@ class LocalThingsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for href, field in self._finish.fields().items():
             if rep := snapshot.get(href):
                 snapshot[href] = {**rep, finish.FIELD: field}
+        for href, at in self._finish.delay_fields().items():
+            if rep := snapshot.get(href):
+                snapshot[href] = {**rep, finish.DELAY_FIELD: at}
         for href in tuple(self._observed_sensing):
             if rep := snapshot.get(href):
                 snapshot[href] = {**rep, range_hood.SENSING_OBSERVED: True}
@@ -818,6 +821,8 @@ class LocalThingsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         rep = self.resource(href)
         if rep and (field := self._finish.field(href)):
             rep = {**rep, finish.FIELD: field}
+        if rep and (at := self._finish.delay_field(href)):
+            rep = {**rep, finish.DELAY_FIELD: at}
         if href in self._observed_sensing and rep:
             rep = {**rep, range_hood.SENSING_OBSERVED: True}
         if href == tvapps.LAUNCH_HREF and rep:
