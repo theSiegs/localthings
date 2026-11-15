@@ -266,11 +266,12 @@ async def test_a_sibling_on_a_stub_or_empty_rep_keeps_its_row(hass, sibling):
 
 @pytest.mark.parametrize(
     "setinfo,removed",
-    [(None, None), ({}, None), ({"false": "x"}, None), ({"FIELD": "false"}, "switch")],
+    [(None, None), ({}, None), ({"false": "x"}, "switch"), ({"FIELD": "false"}, "switch")],
 )
 async def test_power_replaces_the_switch_only_on_the_models_own_flag(hass, setinfo, removed):
     """A discovery without setinfo makes the switch look writable; that must
-    not remove the read-only sensor a laundry board really has."""
+    not remove the read-only sensor a laundry board really has. A setinfo that
+    omits the flag is read-only (common.model_allows_power_on_off)."""
     entry = _entry(hass)
     resources: dict[str, dict] = {"/power/0": {"value": True}}
     if setinfo is not None:
