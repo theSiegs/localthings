@@ -421,3 +421,13 @@ def test_device_reporting_no_delay_key_at_all_writes_the_end_key():
     assert result is not None
     _path, body = result
     assert body == {"x.com.samsung.da.delayEndTime": "01:30:00"}
+
+
+@pytest.mark.parametrize("key", ["delay_start_hours", "delay_finish_at"])
+def test_laundry_delay_writes_waive_remote_control(key):
+    """A WF50A8600 washer and DVE50A8800 dryer held a delay written with
+    Smart Control off; Start still needs it."""
+    desc = next(e for e in OPERATIONAL_STATE.entities if e.key == key)
+    assert desc.needs_remote_control is False
+    start = next(e for e in OPERATIONAL_STATE.entities if e.key == "start")
+    assert start.needs_remote_control is True

@@ -272,6 +272,10 @@ OPERATIONAL_STATE = Capability(
         ),
         NumberDesc(
             key="delay_start_hours",
+            # A WF50A8600 washer and DVE50A8800 dryer both held a delay written
+            # with Smart Control off; the start itself still needs it. A board
+            # that drops the write is caught by the read-back.
+            needs_remote_control=False,
             icon="mdi:timer-plus-outline",
             device_class="duration",
             unit="h",
@@ -288,6 +292,8 @@ OPERATIONAL_STATE = Capability(
         ),
         TimeDesc(
             key="delay_finish_at",
+            # Same as delay_start_hours above.
+            needs_remote_control=False,
             icon="mdi:clock-end",
             # Laundry only. Dishwashers delay the start, so on them a finish
             # picker would be asking for something the field cannot express.
